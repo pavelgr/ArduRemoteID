@@ -1,3 +1,8 @@
+#pragma once
+
+#include "options.h"
+
+#if AP_DRONECAN_ENABLED
 
 struct CANFrame;
 
@@ -95,3 +100,5 @@ struct CANFrame {
         return rhs.priorityHigherThan(*this);
     }
 };
+
+#endif

@@ -2,15 +2,16 @@
   DroneCAN class for handling OpenDroneID messages
   with thanks to David Buzz for ArduPilot ESP32 HAL
  */
+
 #include <Arduino.h>
-#include "board_config.h"
-#include "version.h"
-#include <time.h>
+#include "options.h"
+
+#if AP_DRONECAN_ENABLED
+
 #include "DroneCAN.h"
-#include "parameters.h"
+
+#include <time.h>
 #include <stdarg.h>
-#include "util.h"
-#include "monocypher.h"
 
 #include <canard.h>
 #include <uavcan.protocol.NodeStatus.h>
@@ -25,6 +26,11 @@
 #include <dronecan.remoteid.System.h>
 #include <dronecan.remoteid.OperatorID.h>
 #include <dronecan.remoteid.ArmStatus.h>
+
+#include "util.h"
+#include "monocypher.h"
+#include "version.h"
+#include "parameters.h"
 
 #ifndef CAN_BOARD_ID
 #define CAN_BOARD_ID 10001
@@ -865,4 +871,6 @@ void xprintf(const char *fmt, ...)
     va_end(ap);
     Serial.printf("%s", buffer);
 }
+#endif
+
 #endif

@@ -1,7 +1,8 @@
+#pragma once
 
-#include "CANDriver.h"
-#include "transport.h"
-#include <canard.h>
+#include "options.h"
+
+#if AP_DRONECAN_ENABLED
 
 #include <canard.h>
 #include <uavcan.protocol.NodeStatus.h>
@@ -11,6 +12,9 @@
 #include <dronecan.remoteid.System.h>
 #include <dronecan.remoteid.OperatorID.h>
 #include <dronecan.remoteid.SecureCommand.h>
+
+#include "CANDriver.h"
+#include "transport.h"
 
 #define CAN_POOL_SIZE 4096
 
@@ -70,3 +74,5 @@ public:
                               CanardTransferType transfer_type,
                               uint8_t source_node_id);
 };
+
+#endif
