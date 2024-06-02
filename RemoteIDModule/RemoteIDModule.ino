@@ -1,30 +1,31 @@
 /*
   implement OpenDroneID MAVLink and DroneCAN support
- */
-/*
+
   released under GNU GPL v2 or later
  */
 
-#include "options.h"
-#include <Arduino.h>
-#include "version.h"
 #include <math.h>
 #include <time.h>
-#include <sys/time.h>
-#include <opendroneid.h>
-#include "mavlink.h"
-#include "DroneCAN.h"
-#include "WiFi_TX.h"
-#include "BLE_TX.h"
-#include <esp_wifi.h>
+
+#include <Arduino.h>
 #include <WiFi.h>
+
+#include <sys/time.h>
+#include <esp_wifi.h>
+#include <esp_ota_ops.h>
+#include <opendroneid.h>
+
+#include "options.h"
+#include "efuse.h"
+#include "led.h"
 #include "parameters.h"
 #include "webinterface.h"
 #include "check_firmware.h"
-#include <esp_ota_ops.h>
-#include "efuse.h"
-#include "led.h"
-
+#include "mavlink.h"
+#include "DroneCAN.h"
+#include "version.h"
+#include "WiFi_TX.h"
+#include "BLE_TX.h"
 
 #if AP_DRONECAN_ENABLED
 static DroneCAN dronecan;
@@ -32,7 +33,7 @@ static DroneCAN dronecan;
 
 #if AP_MAVLINK_ENABLED
 static MAVLinkSerial mavlink1{Serial1, MAVLINK_COMM_0};
-static MAVLinkSerial mavlink2{Serial,  MAVLINK_COMM_1};
+//static MAVLinkSerial mavlink2{Serial,  MAVLINK_COMM_1};
 #endif
 
 static WiFi_TX wifi;
@@ -81,8 +82,9 @@ void setup()
 
 #if AP_MAVLINK_ENABLED
     mavlink1.init();
-    mavlink2.init();
+//    mavlink2.init();
 #endif
+
 #if AP_DRONECAN_ENABLED
     dronecan.init();
 #endif
@@ -350,8 +352,9 @@ void loop()
 {
 #if AP_MAVLINK_ENABLED
     mavlink1.update();
-    mavlink2.update();
+//    mavlink2.update();
 #endif
+
 #if AP_DRONECAN_ENABLED
     dronecan.update();
 #endif
