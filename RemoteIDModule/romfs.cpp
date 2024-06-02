@@ -1,7 +1,9 @@
+#include <string.h>
+
 #include <Arduino.h>
+
 #include "romfs.h"
 #include "romfs_files.h"
-#include <string.h>
 #include "tinf.h"
 
 const ROMFS::embedded_file *ROMFS::find(const char *fname)
