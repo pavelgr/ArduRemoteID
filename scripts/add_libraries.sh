@@ -1,13 +1,18 @@
 #!/bin/bash
 # setup libraries links in $HOME/Arduino
 
-DEST=~/Arduino/libraries/
+#DEST=~/Arduino/libraries/
 
-mkdir -p "$DEST"
-ln -sf $PWD/modules/uav_electronic_ids/utm "$DEST"
-ln -sf $PWD/modules/opendroneid-core-c/libopendroneid "$DEST"
-ln -sf $PWD/modules/libcanard "$DEST"
+#mkdir -p "$DEST"
+#ln -sf $PWD/modules/uav_electronic_ids/utm "$DEST"
+#ln -sf $PWD/modules/opendroneid-core-c/libopendroneid "$DEST"
+#ln -sf $PWD/modules/libcanard "$DEST"
 
-ln -sf $PWD/libraries/mavlink2 "$DEST"
-ln -sf $PWD/libraries/DroneCAN "$DEST"
-ln -sf $PWD/libraries/DroneCAN_generated "$DEST"
+#ln -sf $PWD/libraries/mavlink2 "$DEST"
+#ln -sf $PWD/libraries/DroneCAN "$DEST"
+#ln -sf $PWD/libraries/DroneCAN_generated "$DEST"
+
+[ -f modules/opendroneid-core-c/library.json ] || {
+    ln -s ../opendroneid-core-c_library.json modules/opendroneid-core-c/library.json 
+}
+

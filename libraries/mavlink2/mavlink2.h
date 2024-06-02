@@ -1,2 +1,2 @@
-#include "generated/all/version.h"
-#include "generated/mavlink_types.h"
+#include "all/version.h"
+#include "mavlink_types.h"
