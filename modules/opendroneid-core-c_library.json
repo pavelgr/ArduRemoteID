@@ -1,0 +1,24 @@
+{
+  "name": "Open Drone ID Core C Library",
+  "keywords": "remote id, uav, drone",
+  "description": "Open Drone ID Core C Library",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/opendroneid/opendroneid-core-c.git"
+  },
+  "version": "2.0",
+  "frameworks": "*",
+  "platforms": "*",
+  "build": {
+    "flags": [
+        "-I ./libopendroneid",
+        "-L ./libopendroneid"
+    ],
+    "srcFilter": [
+		"+<**/*.c>",
+		"-<./wifi/**/*.*>",
+		"-<./test/**/*.*>"
+    ]
+  }
+}
