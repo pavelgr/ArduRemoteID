@@ -16,6 +16,7 @@
 #include <opendroneid.h>
 
 #include "options.h"
+#include "debug.h"
 #include "efuse.h"
 #include "led.h"
 #include "parameters.h"
@@ -39,8 +40,6 @@ static MAVLinkSerial mavlink1{Serial1, MAVLINK_COMM_0};
 static WiFi_TX wifi;
 static BLE_TX ble;
 
-#define DEBUG_BAUDRATE 57600
-
 // OpenDroneID output data structure
 ODID_UAS_Data UAS_data;
 String status_reason;
@@ -58,6 +57,13 @@ static bool pfst_check_ok = false;
  */
 void setup()
 {
+#ifdef DEBUG
+    delay(5000);
+    esp_log_level_set("*", ESP_LOG_DEBUG);
+#endif
+
+    DBEGIN();
+
     // disable brownout checking
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
@@ -70,9 +76,6 @@ void setup()
         // need WiFi for web server
         wifi.init();
     }
-
-    // Serial for debug printf
-    Serial.begin(g.baudrate);
 
     // Serial1 for MAVLink
     Serial1.begin(g.baudrate, SERIAL_8N1, PIN_UART_RX, PIN_UART_TX);
@@ -121,8 +124,6 @@ void setup()
 
     // initially set LED for fail
     led.set_state(Led::LedState::ARM_FAIL);
-
-    esp_log_level_set("*", ESP_LOG_DEBUG);
 
     esp_ota_mark_app_valid_cancel_rollback();
 }

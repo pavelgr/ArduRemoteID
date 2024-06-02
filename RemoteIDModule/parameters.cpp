@@ -5,6 +5,7 @@
 #include <string.h>
 #include "romfs.h"
 #include "util.h"
+#include "debug.h"
 
 Parameters g;
 static nvs_handle handle;
@@ -310,7 +311,7 @@ void Parameters::init(void)
 
     if (nvs_flash_init() != ESP_OK ||
         nvs_open("storage", NVS_READWRITE, &handle) != ESP_OK) {
-        Serial.printf("NVS init failed\n");
+        DPRINTLN("NVS init failed");
     }
     // load values from NVS
     for (const auto &p : params) {

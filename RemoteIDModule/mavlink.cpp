@@ -6,8 +6,7 @@
 #include "board_config.h"
 #include "version.h"
 #include "parameters.h"
-
-#define SERIAL_BAUD 115200
+#include "debug.h"
 
 static HardwareSerial *serial_ports[MAVLINK_COMM_NUM_BUFFERS];
 
@@ -40,7 +39,7 @@ MAVLinkSerial::MAVLinkSerial(HardwareSerial &_serial, mavlink_channel_t _chan) :
 void MAVLinkSerial::init(void)
 {
     // print banner at startup
-    serial.printf("ArduRemoteID version %u.%u %08x\n",
+    DPRINTF("ArduRemoteID version %u.%u %08x\n",
                   FW_VERSION_MAJOR, FW_VERSION_MINOR, GIT_VERSION);
     mavlink_system.sysid = g.mavlink_sysid;
 }
@@ -55,7 +54,7 @@ void MAVLinkSerial::update(void)
         mavlink_system.sysid = g.mavlink_sysid;
     } else if (now_ms - last_hb_warn_ms >= 2000) {
         last_hb_warn_ms = millis();
-        serial.printf("Waiting for heartbeat\n");
+        DPRINTLN("Waiting for heartbeat");
     }
     update_receive();
 
@@ -103,6 +102,9 @@ void MAVLinkSerial::update_receive(void)
     status.packet_rx_drop_count = 0;
 
     const uint16_t nbytes = serial.available();
+    //if (nbytes > 0) {
+		//DPRINTF("nbytes=%d\n", nbytes);
+	//}
     for (uint16_t i=0; i<nbytes; i++) {
         const uint8_t c = (uint8_t)serial.read();
         // Try to get a new message
@@ -133,9 +135,12 @@ void MAVLinkSerial::process_packet(mavlink_status_t &status, mavlink_message_t &
     const uint32_t now_ms = millis();
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_HEARTBEAT: {
+        if (g.options & OPTIONS_PRINT_RID_MAVLINK) {
+            DPRINTLN("MAVLink: got HeartBeat");
+        }
         mavlink_heartbeat_t hb;
+		mavlink_msg_heartbeat_decode(&msg, &hb);
         if (mavlink_system.sysid == 0) {
-            mavlink_msg_heartbeat_decode(&msg, &hb);
             if (msg.sysid > 0 && hb.type != MAV_TYPE_GCS) {
                 mavlink_system.sysid = msg.sysid;
             }
@@ -143,10 +148,10 @@ void MAVLinkSerial::process_packet(mavlink_status_t &status, mavlink_message_t &
         break;
     }
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_LOCATION: {
-        mavlink_msg_open_drone_id_location_decode(&msg, &location);
         if (g.options & OPTIONS_PRINT_RID_MAVLINK) {
-            Serial.printf("MAVLink: got Location\n");
+            DPRINTLN("MAVLink: got Location");
         }
+        mavlink_msg_open_drone_id_location_decode(&msg, &location);
         if (last_location_timestamp != location.timestamp) {
             //only update the timestamp if we receive information with a different timestamp
             last_location_ms = millis();
@@ -156,10 +161,10 @@ void MAVLinkSerial::process_packet(mavlink_status_t &status, mavlink_message_t &
         break;
     }
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID: {
-        mavlink_open_drone_id_basic_id_t basic_id_tmp;
         if (g.options & OPTIONS_PRINT_RID_MAVLINK) {
-            Serial.printf("MAVLink: got BasicID\n");
+            DPRINTLN("MAVLink: got BasicID");
         }
+        mavlink_open_drone_id_basic_id_t basic_id_tmp;
         mavlink_msg_open_drone_id_basic_id_decode(&msg, &basic_id_tmp);
         if ((strlen((const char*) basic_id_tmp.uas_id) > 0) && (basic_id_tmp.id_type > 0) && (basic_id_tmp.id_type <= MAV_ODID_ID_TYPE_SPECIFIC_SESSION_ID)) {
             //only update if we receive valid data
@@ -169,25 +174,25 @@ void MAVLinkSerial::process_packet(mavlink_status_t &status, mavlink_message_t &
         break;
     }
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_AUTHENTICATION: {
-        mavlink_msg_open_drone_id_authentication_decode(&msg, &authentication);
         if (g.options & OPTIONS_PRINT_RID_MAVLINK) {
-            Serial.printf("MAVLink: got Auth\n");
+            DPRINTLN("MAVLink: got Auth");
         }
+        mavlink_msg_open_drone_id_authentication_decode(&msg, &authentication);
         break;
     }
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SELF_ID: {
-        mavlink_msg_open_drone_id_self_id_decode(&msg, &self_id);
         if (g.options & OPTIONS_PRINT_RID_MAVLINK) {
-            Serial.printf("MAVLink: got SelfID\n");
+            DPRINTLN("MAVLink: got SelfID");
         }
+        mavlink_msg_open_drone_id_self_id_decode(&msg, &self_id);
         last_self_id_ms = now_ms;
         break;
     }
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM: {
-        mavlink_msg_open_drone_id_system_decode(&msg, &system);
         if (g.options & OPTIONS_PRINT_RID_MAVLINK) {
-            Serial.printf("MAVLink: got System\n");
+            DPRINTLN("MAVLink: got System");
         }
+        mavlink_msg_open_drone_id_system_decode(&msg, &system);
         if ((last_system_timestamp != system.timestamp) || (system.timestamp == 0)) {
             //only update the timestamp if we receive information with a different timestamp
             last_system_ms = millis();
@@ -197,7 +202,7 @@ void MAVLinkSerial::process_packet(mavlink_status_t &status, mavlink_message_t &
     }
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM_UPDATE: {
         if (g.options & OPTIONS_PRINT_RID_MAVLINK) {
-            Serial.printf("MAVLink: got System update\n");
+            DPRINTLN("MAVLink: got System update");
         }
         mavlink_open_drone_id_system_update_t pkt_system_update;
         mavlink_msg_open_drone_id_system_update_decode(&msg, &pkt_system_update);
@@ -220,7 +225,7 @@ void MAVLinkSerial::process_packet(mavlink_status_t &status, mavlink_message_t &
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_OPERATOR_ID: {
         mavlink_msg_open_drone_id_operator_id_decode(&msg, &operator_id);
         if (g.options & OPTIONS_PRINT_RID_MAVLINK) {
-            Serial.printf("MAVLink: got OperatorID\n");
+            DPRINTLN("MAVLink: got OperatorID");
         }
         last_operator_id_ms = now_ms;
         break;
