@@ -1,6 +1,6 @@
 #include <Arduino.h>
+
 #include "led.h"
-#include "board_config.h"
 
 Led led;
 
@@ -10,12 +10,26 @@ void Led::init(void)
         return;
     }
     done_init = true;
+    
+    next_state = LedState::INIT;
+	state = next_state;
+        
 #ifdef PIN_STATUS_LED
     pinMode(PIN_STATUS_LED, OUTPUT);
 #endif
+
 #ifdef WS2812_LED_PIN
+	on_off = true;
+    last_led_strip_ms = 0;
+
+#ifdef WS2812_LED_POWER_PIN
+    pinMode(WS2812_LED_POWER_PIN, OUTPUT);
+    digitalWrite(WS2812_LED_POWER_PIN, HIGH);
+#endif    
     pinMode(WS2812_LED_PIN, OUTPUT);
+    
     ledStrip.begin();
+    ledStrip.setBrightness(20);
 #endif
 }
 
@@ -24,6 +38,14 @@ void Led::update(void)
     init();
 
     const uint32_t now_ms = millis();
+
+	if (state != next_state) {
+		state = next_state;
+#ifdef WS2812_LED_PIN
+		on_off = true;
+		last_led_strip_ms = 0;
+#endif
+	}
 
 #ifdef PIN_STATUS_LED
     switch (state) {
@@ -43,23 +65,25 @@ void Led::update(void)
 #endif
 
 #ifdef WS2812_LED_PIN
-    ledStrip.clear();
+	if (now_ms - last_led_strip_ms >= 500) {
+		ledStrip.clear();
 
-    switch (state) {
-    case LedState::ARM_OK:
-        ledStrip.setPixelColor(0, ledStrip.Color(0, 255, 0));
-        ledStrip.setPixelColor(0, ledStrip.Color(1, 255, 0)); //for db210pro, set the second LED to have the same output (for now)
-        break;
+		if (on_off) {
+			switch (state) {
+			  case LedState::ARM_OK:
+				ledStrip.fill(ledStrip.Color(0, 255, 0), 0, WS2812_LED_COUNT); 
+				break;
 
-    default:
-        ledStrip.setPixelColor(0, ledStrip.Color(255, 0, 0));
-        ledStrip.setPixelColor(1, ledStrip.Color(255, 0, 0)); //for db210pro, set the second LED to have the same output (for now)
-        break;
-    }
-    if (now_ms - last_led_strip_ms >= 200) {
-        last_led_strip_ms = now_ms;
-        ledStrip.show();
-    }
+			  default:
+				ledStrip.fill(ledStrip.Color(255, 0, 0), 0, WS2812_LED_COUNT); 
+				break;
+			}
+		}
+		
+		ledStrip.show();
+		last_led_strip_ms = now_ms;
+		on_off = !on_off;
+	}
 #endif
 }
 

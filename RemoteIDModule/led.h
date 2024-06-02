@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+
 #include "board_config.h"
 
 #ifdef WS2812_LED_PIN
@@ -17,7 +18,7 @@ public:
     };
 
     void set_state(LedState _state) {
-        state = _state;
+        next_state = _state;
     }
     void update(void);
 
@@ -26,10 +27,13 @@ private:
     bool done_init;
     uint32_t last_led_trig_ms;
     LedState state;
+    LedState next_state;
 
 #ifdef WS2812_LED_PIN
+    bool on_off;
     uint32_t last_led_strip_ms;
-    Adafruit_NeoPixel ledStrip{2, WS2812_LED_PIN, NEO_GRB + NEO_KHZ800}; //the BlueMark db210pro boards has two LEDs, therefore we need to use 2.
+
+    Adafruit_NeoPixel ledStrip{WS2812_LED_COUNT, WS2812_LED_PIN, NEO_GRB + NEO_KHZ800};
 #endif
 };
 
