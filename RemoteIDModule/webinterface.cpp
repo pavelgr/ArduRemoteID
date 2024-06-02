@@ -1,4 +1,4 @@
-#include "webinterface.h"
+#include <Arduino.h>
 
 #include <WiFi.h>
 #include <WiFiClient.h>
@@ -6,10 +6,13 @@
 #include <WiFiAP.h>
 #include <ESPmDNS.h>
 #include <Update.h>
+
+#include "webinterface.h"
 #include "parameters.h"
 #include "romfs.h"
 #include "check_firmware.h"
 #include "status.h"
+#include "debug.h"
 
 static WebServer server(80);
 
@@ -34,7 +37,7 @@ class ROMFS_Handler : public RequestHandler
             requestUri = "/index.html";
         }
         String uri = "web" + requestUri;
-        Serial.printf("handle: '%s'\n", requestUri.c_str());
+        DPRINTF("handle: '%s'\n", requestUri.c_str());
 
         // work out content type
         const char *content_type = "text/html";
@@ -90,7 +93,7 @@ class AJAX_Handler : public RequestHandler
  */
 void WebInterface::init(void)
 {
-    Serial.printf("WAP start %s %s\n", g.wifi_ssid, g.wifi_password);
+    DPRINTF("WAP start %s %s\n", g.wifi_ssid, g.wifi_password);
     IPAddress myIP = WiFi.softAPIP();
 
     server.addHandler( &AJAX_Handler );
@@ -101,12 +104,12 @@ void WebInterface::init(void)
         if (Update.hasError()) {
 			server.sendHeader("Connection", "close");
 		    server.send(500, "text/plain","FAIL");
-		    Serial.printf("Update Failed: Update function has errors\n");
+		    DPRINTF("Update Failed: Update function has errors\n");
 		    delay(5000);
 		} else {
 			server.sendHeader("Connection", "close");
 			server.send(200, "text/plain","OK");
-			Serial.printf("Update Success: \nRebooting...\n");
+			DPRINTF("Update Success: \nRebooting...\n");
 			delay(1000);
 			ESP.restart();
 		}
@@ -114,11 +117,12 @@ void WebInterface::init(void)
         HTTPUpload& upload = server.upload();
         static const esp_partition_t* partition_new_firmware = esp_ota_get_next_update_partition(NULL); //get OTA partion to which we will write new firmware file;
         if (upload.status == UPLOAD_FILE_START) {
-            Serial.printf("Update: %s\n", upload.filename.c_str());
+            DPRINTF("Update: %s\n", upload.filename.c_str());
             lead_len = 0;
 
             if (!Update.begin(UPDATE_SIZE_UNKNOWN)) { //start with max available size
-                Update.printError(Serial);
+                DPRINTF("Update Failed: cannot start file write\n");
+                //Update.printError(Serial);
             }
         } else if (upload.status == UPLOAD_FILE_WRITE) {
             /* flashing firmware to ESP*/
@@ -131,7 +135,8 @@ void WebInterface::init(void)
                 lead_len += n;
             }
             if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-                Update.printError(Serial);
+                DPRINTF("Update Failed: failed file write\n");
+                //Update.printError(Serial);
             }
         } else if (upload.status == UPLOAD_FILE_END) {
             // write extra bytes to force flush of the buffer before we check signature
@@ -141,24 +146,24 @@ void WebInterface::init(void)
                 Update.write(&ff, 1);
             }
             if (!CheckFirmware::check_OTA_next(partition_new_firmware, lead_bytes, lead_len)) {
-                Serial.printf("Update Failed: firmware checks have errors\n");
+                DPRINTF("Update Failed: firmware checks have errors\n");
                 server.sendHeader("Connection", "close");
                 server.send(500, "text/plain","FAIL");
                 delay(5000);
             } else if (Update.end(true)) {
-                Serial.printf("Update Success: %u\nRebooting...\n", upload.totalSize);
+                DPRINTF("Update Success: %u\nRebooting...\n", upload.totalSize);
                 server.sendHeader("Connection", "close");
                 server.send(200, "text/plain","OK");
             } else {
-                Update.printError(Serial);
-                Serial.printf("Update Failed: Update.end function has errors\n");
+                //Update.printError(Serial);
+                DPRINTF("Update Failed: Update.end function has errors\n");
                 server.sendHeader("Connection", "close");
                 server.send(500, "text/plain","FAIL");
                 delay(5000);
             }
         }
     });
-    Serial.printf("WAP started\n");
+    DPRINTF("WAP started\n");
     server.begin();
 }
 

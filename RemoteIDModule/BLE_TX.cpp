@@ -7,15 +7,16 @@
   https://github.com/Tinyu-Zhao/Arduino-Borads/blob/b584d00a81e4ac6d7b72697c674ca1bbcb8aae69/libraries/BLE/examples/BLE5_multi_advertising/BLE5_multi_advertising.ino
  */
 
-#include "BLE_TX.h"
-#include "options.h"
-#include <esp_system.h>
+#include <Arduino.h>
 
+#include <esp_system.h>
 #include <BLEDevice.h>
 #include <BLEAdvertising.h>
+
+#include "BLE_TX.h"
+#include "options.h"
 #include "parameters.h"
-
-
+#include "debug.h"
 
 //interval min/max are configured for 1 Hz update rate. Somehow dynamic setting of these fields fails
 //shorter intervals lead to more BLE transmissions. This would result in increased power consumption and can lead to more interference to other radio systems.
@@ -121,7 +122,7 @@ bool BLE_TX::init(void)
 
     // prefer S8 coding
     if (esp_ble_gap_set_prefered_default_phy(ESP_BLE_GAP_PHY_OPTIONS_PREF_S8_CODING, ESP_BLE_GAP_PHY_OPTIONS_PREF_S8_CODING) != ESP_OK) {
-        Serial.printf("Failed to setup S8 coding\n");
+        DPRINTF("Failed to setup S8 coding\n");
     }
 
     memset(&msg_counters,0, sizeof(msg_counters));

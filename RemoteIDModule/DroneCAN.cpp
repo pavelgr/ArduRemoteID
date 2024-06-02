@@ -8,8 +8,6 @@
 
 #if AP_DRONECAN_ENABLED
 
-#include "DroneCAN.h"
-
 #include <time.h>
 #include <stdarg.h>
 
@@ -27,10 +25,12 @@
 #include <dronecan.remoteid.OperatorID.h>
 #include <dronecan.remoteid.ArmStatus.h>
 
-#include "util.h"
+#include "DroneCAN.h"
 #include "monocypher.h"
-#include "version.h"
 #include "parameters.h"
+#include "version.h"
+#include "util.h"
+#include "debug.h"
 
 #ifndef CAN_BOARD_ID
 #define CAN_BOARD_ID 10001
@@ -54,8 +54,8 @@ void DroneCAN::init(void)
 {
 
 #if defined(BOARD_BLUEMARK_DB210)
-    gpio_reset_pin(GPIO_NUM_19);
-    gpio_reset_pin(GPIO_NUM_20);
+    gpio_reset_pin(PIN_CAN_TX);
+    gpio_reset_pin(PIN_CAN_RX);
 #endif
 
     /*
@@ -159,28 +159,28 @@ void DroneCAN::onTransferReceived(CanardInstance* ins,
         handle_get_node_info(ins, transfer);
         break;
     case UAVCAN_PROTOCOL_RESTARTNODE_ID:
-        Serial.printf("DroneCAN: restartNode\n");
+        DPRINTF("DroneCAN: restartNode\n");
         delay(20);
         esp_restart();
         break;
     case DRONECAN_REMOTEID_BASICID_ID:
-        Serial.printf("DroneCAN: got BasicID\n");
+        DPRINTF("DroneCAN: got BasicID\n");
         handle_BasicID(transfer);
         break;
     case DRONECAN_REMOTEID_LOCATION_ID:
-        Serial.printf("DroneCAN: got Location\n");
+        DPRINTF("DroneCAN: got Location\n");
         handle_Location(transfer);
         break;
     case DRONECAN_REMOTEID_SELFID_ID:
-        Serial.printf("DroneCAN: got SelfID\n");
+        DPRINTF("DroneCAN: got SelfID\n");
         handle_SelfID(transfer);
         break;
     case DRONECAN_REMOTEID_SYSTEM_ID:
-        Serial.printf("DroneCAN: got System\n");
+        DPRINTF("DroneCAN: got System\n");
         handle_System(transfer);
         break;
     case DRONECAN_REMOTEID_OPERATORID_ID:
-        Serial.printf("DroneCAN: got OperatorID\n");
+        DPRINTF("DroneCAN: got OperatorID\n");
         handle_OperatorID(transfer);
         break;
     case UAVCAN_PROTOCOL_PARAM_GETSET_ID:
@@ -190,7 +190,7 @@ void DroneCAN::onTransferReceived(CanardInstance* ins,
         handle_SecureCommand(ins, transfer);
         break;
     default:
-        //Serial.printf("reject %u\n", transfer->data_type_id);
+        //DPRINTF("reject %u\n", transfer->data_type_id);
         break;
     }
 }
@@ -220,7 +220,7 @@ bool DroneCAN::shouldAcceptTransfer(const CanardInstance* ins,
         ACCEPT_ID(UAVCAN_PROTOCOL_PARAM_GETSET);
         return true;
     }
-    //Serial.printf("%u: reject ID 0x%x\n", millis(), data_type_id);
+    //DPRINTF("%u: reject ID 0x%x\n", millis(), data_type_id);
     return false;
 }
 
@@ -282,7 +282,7 @@ void DroneCAN::processRx(void)
         rx_frame.id = rxmsg.id;
         int err = canardHandleRxFrame(&canard, &rx_frame, timestamp);
 #if 0
-        Serial.printf("%u: FX %08x %02x %02x %02x %02x %02x %02x %02x %02x (%u) -> %d\n",
+        DPRINTF("%u: FX %08x %02x %02x %02x %02x %02x %02x %02x %02x (%u) -> %d\n",
                       millis(),
                       rx_frame.id,
                       rxmsg.data[0], rxmsg.data[1], rxmsg.data[2], rxmsg.data[3],
@@ -433,7 +433,7 @@ void DroneCAN::handle_allocation_response(CanardInstance* ins, CanardRxTransfer*
     } else {
         // Allocation complete - copying the allocated node ID from the message
         canardSetLocalNodeID(ins, msg.node_id);
-        Serial.printf("Node ID allocated: %u\n", unsigned(msg.node_id));
+        DPRINTF("Node ID allocated: %u\n", unsigned(msg.node_id));
     }
 }
 
@@ -788,7 +788,7 @@ void DroneCAN::handle_SecureCommand(CanardInstance* ins, CanardRxTransfer* trans
         break;
     }
     case DRONECAN_REMOTEID_SECURECOMMAND_REQUEST_SECURE_COMMAND_SET_REMOTEID_CONFIG: {
-        Serial.printf("SECURE_COMMAND_SET_REMOTEID_CONFIG\n");
+        DPRINTF("SECURE_COMMAND_SET_REMOTEID_CONFIG\n");
         int16_t data_len = req.data.len - req.sig_length;
         req.data.data[data_len] = 0;
         /*
@@ -798,7 +798,7 @@ void DroneCAN::handle_SecureCommand(CanardInstance* ins, CanardRxTransfer* trans
         char *command = (char *)req.data.data;
         while (data_len > 0) {
             uint8_t cmdlen = strlen(command);
-            Serial.printf("set_config %s", command);
+            DPRINTF("set_config %s", command);
             char *eq = strchr(command, '=');
             if (eq != nullptr) {
                 *eq = 0;
@@ -869,7 +869,7 @@ void xprintf(const char *fmt, ...)
     va_start(ap, fmt);
     uint32_t n = vsnprintf(buffer, sizeof(buffer), fmt, ap);
     va_end(ap);
-    Serial.printf("%s", buffer);
+    DPRINTF("%s", buffer);
 }
 #endif
 
