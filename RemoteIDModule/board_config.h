@@ -118,6 +118,7 @@
 
 #define BUZZER_PIN GPIO_NUM_39 //at the moment easiest is to have active buzzer support. (Buzzer on if GPIO is high)
 
+#define WS2812_LED_COUNT 2
 #define WS2812_LED_PIN GPIO_NUM_8 //there are two WS2812 LEDs on this GPIO
 
 #define CAN_APP_NODE_NAME "BlueMark DB210PRO"
@@ -162,4 +163,8 @@
 
 #else
 #error "unsupported board"
+#endif
+
+#ifndef WS2812_LED_COUNT
+#define WS2812_LED_COUNT 1
 #endif
