@@ -10,7 +10,7 @@
 #define DPRINT(x) Serial.print(x)
 #define DPRINTLN(x) Serial.println(x)
 
-#define DPRINTF(x, ...) Serial.printf(x, __VA_ARGS__)
+#define DPRINTF(...) Serial.printf(__VA_ARGS__)
 
 #else
 #define DBEGIN()
@@ -18,6 +18,6 @@
 #define DPRINT(x)
 #define DPRINTLN(x)
 
-#define DPRINTF(x, ...)
+#define DPRINTF(...)
 
 #endif

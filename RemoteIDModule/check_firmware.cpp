@@ -1,9 +1,13 @@
+
 #include <Arduino.h>
+
+#include <string.h>
+
 #include "check_firmware.h"
 #include "monocypher.h"
 #include "parameters.h"
-#include <string.h>
 #include "util.h"
+#include "debug.h"
 
 bool CheckFirmware::check_partition(const uint8_t *flash, uint32_t flash_len,
                                     const uint8_t *lead_bytes, uint32_t lead_length,
@@ -21,12 +25,12 @@ bool CheckFirmware::check_partition(const uint8_t *flash, uint32_t flash_len,
 
 bool CheckFirmware::check_OTA_partition(const esp_partition_t *part, const uint8_t *lead_bytes, uint32_t lead_length, uint32_t &board_id)
 {
-    Serial.printf("Checking partition %s\n", part->label);
+    DPRINTF("Checking partition %s\n", part->label);
     spi_flash_mmap_handle_t handle;
     const void *ptr = nullptr;
     auto ret = esp_partition_mmap(part, 0, part->size, SPI_FLASH_MMAP_DATA, &ptr, &handle);
     if (ret != ESP_OK) {
-        Serial.printf("mmap failed\n");
+        DPRINTF("mmap failed\n");
         return false;
     }
     const uint8_t sig_rev[] = APP_DESCRIPTOR_REV;
@@ -36,21 +40,21 @@ bool CheckFirmware::check_OTA_partition(const esp_partition_t *part, const uint8
     }
     const app_descriptor_t *ad = (app_descriptor_t *)memmem(ptr, part->size, sig, sizeof(sig));
     if (ad == nullptr) {
-        Serial.printf("app_descriptor not found\n");
+        DPRINTF("app_descriptor not found\n");
         spi_flash_munmap(handle);
         return false;
     }
-    Serial.printf("app descriptor at 0x%x size=%u id=%u (own id %u)\n", unsigned(ad)-unsigned(ptr), ad->image_size, ad->board_id,BOARD_ID);
+    DPRINTF("app descriptor at 0x%x size=%u id=%u (own id %u)\n", unsigned(ad)-unsigned(ptr), ad->image_size, ad->board_id,BOARD_ID);
     const uint32_t img_len = uint32_t(uintptr_t(ad) - uintptr_t(ptr));
     if (ad->image_size != img_len) {
-        Serial.printf("app_descriptor bad size %u\n", ad->image_size);
+        DPRINTF("app_descriptor bad size %u\n", ad->image_size);
         spi_flash_munmap(handle);
         return false;
     }
     board_id = ad->board_id;
 
     if (g.no_public_keys()) {
-        Serial.printf("No public keys - accepting firmware\n");
+        DPRINTF("No public keys - accepting firmware\n");
         spi_flash_munmap(handle);
         return true;
     }
@@ -61,20 +65,20 @@ bool CheckFirmware::check_OTA_partition(const esp_partition_t *part, const uint8
             continue;
         }
         if (check_partition((const uint8_t *)ptr, img_len, lead_bytes, lead_length, ad, key)) {
-            Serial.printf("check firmware good for key %u\n", i);
+            DPRINTF("check firmware good for key %u\n", i);
             spi_flash_munmap(handle);
             return true;
         }
-        Serial.printf("check failed key %u\n", i);
+        DPRINTF("check failed key %u\n", i);
     }
     spi_flash_munmap(handle);
-    Serial.printf("firmware failed checks\n");
+    DPRINTF("firmware failed checks\n");
     return false;
 }
 
 bool CheckFirmware::check_OTA_next(const esp_partition_t *part, const uint8_t *lead_bytes, uint32_t lead_length)
 {
-    Serial.printf("Running partition %s\n", esp_ota_get_running_partition()->label);
+    DPRINTF("Running partition %s\n", esp_ota_get_running_partition()->label);
 
     uint32_t board_id = 0;
     bool sig_ok = check_OTA_partition(part, lead_bytes, lead_length, board_id);
@@ -96,7 +100,7 @@ bool CheckFirmware::check_OTA_running(void)
 {
     const auto *running_part = esp_ota_get_running_partition();
     if (running_part == nullptr) {
-        Serial.printf("No running OTA partition\n");
+        DPRINTF("No running OTA partition\n");
         return false;
     }
     uint32_t board_id=0;

@@ -7,8 +7,6 @@
 
 #if AP_DRONECAN_ENABLED
 
-#include "CANDriver.h"
-
 #include <freertos/FreeRTOS.h>
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -16,7 +14,9 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "driver/twai.h"
-#include "board_config.h"
+
+#include "CANDriver.h"
+#include "debug.h"
 
 #define CAN1_TX_IRQ_Handler      ESP32_CAN1_TX_HANDLER
 #define CAN1_RX0_IRQ_Handler     ESP32_CAN1_RX0_HANDLER
@@ -56,30 +56,30 @@ void CANDriver::init_once(bool enable_irq)
 {
     if (twai_driver_install(&g_config, &t_config, &f_config) == ESP_OK)
     {
-        Serial.printf("CAN/TWAI Driver installed\n");
+        DPRINTF("CAN/TWAI Driver installed\n");
     }
     else
     {
-        Serial.printf("Failed to install CAN/TWAI driver\n");
+        DPRINTF("Failed to install CAN/TWAI driver\n");
         return;
     }
 
     //Reconfigure alerts to detect rx-related stuff only...
     uint32_t alerts_to_enable = TWAI_ALERT_RX_DATA | TWAI_ALERT_RX_QUEUE_FULL;
     if (twai_reconfigure_alerts(alerts_to_enable, NULL) == ESP_OK) {
-        Serial.printf("CAN/TWAI Alerts reconfigured\n");
+        DPRINTF("CAN/TWAI Alerts reconfigured\n");
     } else {
-        Serial.printf("Failed to reconfigure CAN/TWAI alerts");
+        DPRINTF("Failed to reconfigure CAN/TWAI alerts");
     }
 
     //Start TWAI driver
     if (twai_start() == ESP_OK)
     {
-        Serial.printf("CAN/TWAI Driver started\n");
+        DPRINTF("CAN/TWAI Driver started\n");
     }
     else
     {
-        Serial.printf("Failed to start CAN/TWAI driver\n");
+        DPRINTF("Failed to start CAN/TWAI driver\n");
         return;
     }
 }
@@ -93,7 +93,7 @@ bool CANDriver::init_bus(const uint32_t _bitrate)
     if (!computeTimings(bitrate, timings)) {
         return false;
     }
-    Serial.printf("Timings: presc=%u sjw=%u bs1=%u bs2=%u",
+    DPRINTF("Timings: presc=%u sjw=%u bs1=%u bs2=%u",
                   unsigned(timings.prescaler), unsigned(timings.sjw), unsigned(timings.bs1), unsigned(timings.bs2));
     return true;
 }
@@ -209,7 +209,7 @@ bool CANDriver::computeTimings(uint32_t target_bitrate, Timings& out_timings)
         return false;
     }
 
-    Serial.printf("Timings: quanta/bit: %d, sample point location: %.1f%%",
+    DPRINTF("Timings: quanta/bit: %d, sample point location: %.1f%%",
                   int(1 + solution.bs1 + solution.bs2), float(solution.sample_point_permill) / 10.F);
 
     out_timings.prescaler = uint16_t(prescaler - 1U);

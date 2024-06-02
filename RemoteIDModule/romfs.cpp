@@ -5,17 +5,18 @@
 #include "romfs.h"
 #include "romfs_files.h"
 #include "tinf.h"
+#include "debug.h"
 
 const ROMFS::embedded_file *ROMFS::find(const char *fname)
 {
     for (const auto &f : files) {
         if (strcmp(fname, f.filename) == 0) {
-            Serial.printf("ROMFS Returning '%s' size=%u len=%u\n",
+            DPRINTF("ROMFS Returning '%s' size=%u len=%u\n",
                           fname, f.size, strlen((const char *)f.contents));
             return &f;
         }
     }
-    Serial.printf("ROMFS not found '%s'\n", fname);
+    DPRINTF("ROMFS not found '%s'\n", fname);
     return nullptr;
 }
 
